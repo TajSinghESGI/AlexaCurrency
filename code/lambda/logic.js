@@ -20,6 +20,7 @@ const fetchCurrency = (base, symbols) => {
 }
 
 const convertAmount = (amount, currency) => {
+    console.log("RES CONV" + (parseFloat(amount) * parseFloat(currency)));
     return parseFloat(amount) * parseFloat(currency);
 }
 

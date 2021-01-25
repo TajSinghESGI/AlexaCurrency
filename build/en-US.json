@@ -1,0 +1,268 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "esgi convert",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "CurrencyConverterIntent",
+                    "slots": [
+                        {
+                            "name": "currency",
+                            "type": "currencySlotType",
+                            "samples": [
+                                "{currency}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "Give me the change of {currency}"
+                    ]
+                },
+                {
+                    "name": "ConvertCurrencyIntent",
+                    "slots": [
+                        {
+                            "name": "price",
+                            "type": "AMAZON.NUMBER",
+                            "samples": [
+                                "{price}"
+                            ]
+                        },
+                        {
+                            "name": "currency",
+                            "type": "currencySlotType",
+                            "samples": [
+                                "{currency}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "Change {price} into {currency}"
+                    ]
+                },
+                {
+                    "name": "CurrencyFavIntent",
+                    "slots": [
+                        {
+                            "name": "currencyFav",
+                            "type": "currencySlotType",
+                            "samples": [
+                                "{currencyFav}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "Save {currencyFav} as favorite currency"
+                    ]
+                }
+            ],
+            "types": [
+                {
+                    "name": "currencySlotType",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "CHF",
+                                "synonyms": [
+                                    "chf"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "JPY",
+                                "synonyms": [
+                                    "jpy"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "GBP",
+                                "synonyms": [
+                                    "gbp"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "EUR",
+                                "synonyms": [
+                                    "eur"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "USD",
+                                "synonyms": [
+                                    "usd"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "CurrencyConverterIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1609272497759"
+                    },
+                    "slots": [
+                        {
+                            "name": "currency",
+                            "type": "currencySlotType",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1398559735465.1318975975685"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "ConvertCurrencyIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1547065368317"
+                    },
+                    "slots": [
+                        {
+                            "name": "price",
+                            "type": "AMAZON.NUMBER",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1547065368317.104112504733"
+                            }
+                        },
+                        {
+                            "name": "currency",
+                            "type": "currencySlotType",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1547065368317.1050565559429"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "CurrencyFavIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "currencyFav",
+                            "type": "currencySlotType",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.338978224443.1452888751698"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "delegationStrategy": "ALWAYS"
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.1398559735465.1318975975685",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What's the rate ?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.1398559735465",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "You would like the change of {currency} ?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.1547065368317",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Would you like to change {price} into {currency} ?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1547065368317.104112504733",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Would you like to change ?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1547065368317.1050565559429",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What's the change ?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.1609272497759",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you want the change of {currency} ?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.338978224443.1452888751698",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "You have saved {currencyFav} as favourite currency"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.338978224443.1452888751698",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What is the currency wanted ?"
+                    }
+                ]
+            }
+        ]
+    }
+}

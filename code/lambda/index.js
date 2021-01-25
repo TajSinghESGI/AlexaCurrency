@@ -3,8 +3,10 @@
  * Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
  * session persistence, api calls, and more.
  * */
+const AWS = require('aws-sdk');
 const Alexa = require('ask-sdk-core');
 const moment = require('moment-timezone');
+const ddbAdapter = require('ask-sdk-dynamodb-persistence-adapter');
 
 const util = require('./util');
 const interceptors = require('./interceptors');
@@ -15,17 +17,67 @@ const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
-   handle(handlerInput) {
-        const {t, attributesManager} = handlerInput;
-        const sessionAttributes = attributesManager.getSessionAttributes();
-        
-        let speechText = t('WELCOME_MSG');
+   async handle(handlerInput) {
+        const {t} = handlerInput;
+        const attributesManager = handlerInput.attributesManager;
+        var sessionAttributes = attributesManager.getSessionAttributes();
 
+        const attributes = await attributesManager.getPersistentAttributes() || {};
+        attributesManager.setSessionAttributes({});
+
+        const currencyFav = attributes.hasOwnProperty('currencyFav');
+        let speechText = currencyFav ? (t('WELCOME_BACK_MSG') + JSON.stringify(attributes["currencyFav"])): t('WELCOME_MSG');
+            
         return handlerInput.responseBuilder
             .speak(speechText)
             // we use intent chainng to trigger the birthday registration multi-turn
+            .addDelegateDirective({
+                name: currencyFav ? 'CurrencyConverterIntent' : 'CurrencyFavIntent',
+                confirmationStatus: 'NONE',
+                slots:{}
+            })
             .getResponse();
     }
+};
+
+const CurrencyFavIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'CurrencyFavIntent';
+    },
+    async handle(handlerInput) {
+        const {requestEnvelope, responseBuilder, attributesManager, t} = handlerInput;
+        const {intent} = requestEnvelope.request;
+        
+        if (intent.confirmationStatus === 'NONE') {
+            const currency = Alexa.getSlotValue(requestEnvelope, 'currencyFav').toString().toUpperCase();
+            const attributesManager = handlerInput.attributesManager;
+            await attributesManager.deletePersistentAttributes();
+            let attributes = {"currencyFav":currency};
+
+            attributesManager.setPersistentAttributes(attributes);
+            await attributesManager.savePersistentAttributes().then(() => {
+              console.log("PAssé")
+            })
+            .catch((error) => {
+              console.log("EROOOOOOOR" + error);
+            });
+            
+            const sessionAttributes = await attributesManager.getPersistentAttributes();
+
+            let speechOutput = `Vous avez ajouté ${attributes.currencyFav} comme devise favorite !`;
+
+            return handlerInput.responseBuilder
+                .speak(speechOutput)
+                .getResponse();
+            // we can't use intent chaning because target intent is not dialog based
+            //return SayBirthdayIntentHandler.handle(handlerInput) //Appel Intent API
+        } 
+        return responseBuilder
+            .speak(t('REJECTED_MSG'))
+            .reprompt(t('REPROMPT_MSG'))
+            .getResponse();
+    }  
 };
 
 const CurrencyConverterIntentHandler = {
@@ -35,20 +87,23 @@ const CurrencyConverterIntentHandler = {
     },
     async handle(handlerInput) {
         const {requestEnvelope, responseBuilder, attributesManager, t} = handlerInput;
-        const sessionAttributes = attributesManager.getSessionAttributes();
+        //const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
         
         if (intent.confirmationStatus === 'CONFIRMED') {
-            const currency = Alexa.getSlotValue(requestEnvelope, 'currency');
-            sessionAttributes['currency'] = currency.toString().toUpperCase();
-            console.log("CURRENCY" + currency)
+            const currency = Alexa.getSlotValue(requestEnvelope, 'currency').toString().toUpperCase();
+            
+            const attributesManager = handlerInput.attributesManager;
+            const attributes = await attributesManager.getPersistentAttributes() || {};
+
+            const currencyFav = attributes.hasOwnProperty('currencyFav') ? attributes["currencyFav"] : "EUR";
+
             // we can't use intent chaning because target intent is not dialog based
             //return SayBirthdayIntentHandler.handle(handlerInput) //Appel Intent API
-            const response = await logic.fetchCurrency("EUR", currency);
+            const response = await logic.fetchCurrency(currencyFav, currency);
             const taux = response.rates[currency];
-            console.log("Taux", response.rates.currency);
             return responseBuilder
-            .speak("Le taux est : " + taux)
+            .speak(t('RATE_MSG') + JSON.stringify(taux))
             .reprompt(t('REPROMPT_MSG'))
             .getResponse();
         } 
@@ -66,21 +121,25 @@ const ConvertCurrencyIntentHandler = {
     },
     async handle(handlerInput) {
         const {requestEnvelope, responseBuilder, attributesManager, t} = handlerInput;
-        const sessionAttributes = attributesManager.getSessionAttributes();
+    //    const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
         
         if (intent.confirmationStatus === 'CONFIRMED') {
-            const currency = Alexa.getSlotValue(requestEnvelope, 'currency');
+            const currency = Alexa.getSlotValue(requestEnvelope, 'currency').toString().toUpperCase();
             const price = Alexa.getSlotValue(requestEnvelope, 'price');
-            sessionAttributes['currency'] = currency;
-            sessionAttributes['price'] = price;
+            const attributesManager = handlerInput.attributesManager;
+            const attributes = await attributesManager.getPersistentAttributes() || {};
+
+            const currencyFav = attributes.hasOwnProperty('currencyFav') ? attributes["currencyFav"] : "EUR";
+         //   sessionAttributes['currency'] = currency;
+         //   sessionAttributes['price'] = price;
             // we can't use intent chaning because target intent is not dialog based
             //return SayBirthdayIntentHandler.handle(handlerInput) //Appel Intent API
-            const response = await logic.fetchCurrency("EUR", currency);
+            const response = await logic.fetchCurrency(currencyFav, currency);
             const taux = response.rates[currency]; 
             const converter = logic.convertAmount(price, taux);
             return responseBuilder
-            .speak("La conversion a donné : " + converter)
+            .speak(t('CONVERSION_MSG') + JSON.stringify(converter))
             .reprompt(t('REPROMPT_MSG'))
             .getResponse();
         } 
@@ -205,6 +264,7 @@ const ErrorHandler = {
 exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
+        CurrencyFavIntentHandler,
         CurrencyConverterIntentHandler,
         ConvertCurrencyIntentHandler,
         HelpIntentHandler,
@@ -220,9 +280,9 @@ exports.handler = Alexa.SkillBuilders.custom()
         interceptors.LoadAttributesRequestInterceptor,
         interceptors.LoadNameRequestInterceptor,
         interceptors.LoadTimezoneRequestInterceptor)
-    .addResponseInterceptors(
+    /*.addResponseInterceptors(
         interceptors.LoggingResponseInterceptor,
-        interceptors.SaveAttributesResponseInterceptor)
+        interceptors.SaveAttributesResponseInterceptor)*/
     .withPersistenceAdapter(util.getPersistenceAdapter())
     .withApiClient(new Alexa.DefaultApiClient())
     .lambda();
