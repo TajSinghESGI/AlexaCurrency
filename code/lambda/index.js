@@ -30,7 +30,6 @@ const LaunchRequestHandler = {
             
         return handlerInput.responseBuilder
             .speak(speechText)
-            // we use intent chainng to trigger the birthday registration multi-turn
             .addDelegateDirective({
                 name: currencyFav ? 'CurrencyConverterIntent' : 'CurrencyFavIntent',
                 confirmationStatus: 'NONE',
@@ -56,12 +55,7 @@ const CurrencyFavIntentHandler = {
             let attributes = {"currencyFav":currency};
 
             attributesManager.setPersistentAttributes(attributes);
-            await attributesManager.savePersistentAttributes().then(() => {
-              console.log("PAssé")
-            })
-            .catch((error) => {
-              console.log("EROOOOOOOR" + error);
-            });
+            await attributesManager.savePersistentAttributes();
             
             const sessionAttributes = await attributesManager.getPersistentAttributes();
 
@@ -70,8 +64,6 @@ const CurrencyFavIntentHandler = {
             return handlerInput.responseBuilder
                 .speak(speechOutput)
                 .getResponse();
-            // we can't use intent chaning because target intent is not dialog based
-            //return SayBirthdayIntentHandler.handle(handlerInput) //Appel Intent API
         } 
         return responseBuilder
             .speak(t('REJECTED_MSG'))
@@ -87,7 +79,6 @@ const CurrencyConverterIntentHandler = {
     },
     async handle(handlerInput) {
         const {requestEnvelope, responseBuilder, attributesManager, t} = handlerInput;
-        //const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
         
         if (intent.confirmationStatus === 'CONFIRMED') {
@@ -98,12 +89,10 @@ const CurrencyConverterIntentHandler = {
 
             const currencyFav = attributes.hasOwnProperty('currencyFav') ? attributes["currencyFav"] : "EUR";
 
-            // we can't use intent chaning because target intent is not dialog based
-            //return SayBirthdayIntentHandler.handle(handlerInput) //Appel Intent API
             const response = await logic.fetchCurrency(currencyFav, currency);
             const taux = response.rates[currency];
             return responseBuilder
-            .speak(t('RATE_MSG') + JSON.stringify(taux))
+            .speak(t('RATE_MSG') + parseFloat(JSON.stringify(taux)).toFixed(2))
             .reprompt(t('REPROMPT_MSG'))
             .getResponse();
         } 
@@ -121,7 +110,6 @@ const ConvertCurrencyIntentHandler = {
     },
     async handle(handlerInput) {
         const {requestEnvelope, responseBuilder, attributesManager, t} = handlerInput;
-    //    const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
         
         if (intent.confirmationStatus === 'CONFIRMED') {
@@ -131,15 +119,12 @@ const ConvertCurrencyIntentHandler = {
             const attributes = await attributesManager.getPersistentAttributes() || {};
 
             const currencyFav = attributes.hasOwnProperty('currencyFav') ? attributes["currencyFav"] : "EUR";
-         //   sessionAttributes['currency'] = currency;
-         //   sessionAttributes['price'] = price;
-            // we can't use intent chaning because target intent is not dialog based
-            //return SayBirthdayIntentHandler.handle(handlerInput) //Appel Intent API
+   
             const response = await logic.fetchCurrency(currencyFav, currency);
             const taux = response.rates[currency]; 
             const converter = logic.convertAmount(price, taux);
             return responseBuilder
-            .speak(t('CONVERSION_MSG') + JSON.stringify(converter))
+            .speak(t('CONVERSION_MSG') + parseFloat(JSON.stringify(converter)).toFixed(2))
             .reprompt(t('REPROMPT_MSG'))
             .getResponse();
         } 
